@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Maze Solver AR</title>
+  </head>
+  <body>
+    <div class="app-container">
+      <div class="video-container">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="overlay"></canvas>
+      </div>
+      <div class="controls">
+        <button id="start-btn" class="primary-btn">Start Camera</button>
+        <button id="solve-btn" class="primary-btn" disabled>Solve Maze</button>
+      </div>
+      <div class="status">
+        <p id="status-text">Ready to start</p>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
