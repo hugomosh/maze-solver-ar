@@ -3,8 +3,9 @@ import "./style.css";
 import { setupCamera, captureFrame } from "./ui/camera";
 import { MazeDetector } from "./maze/detector";
 import { MazeSolver } from "./maze/solver";
+import { MazeProjector } from "./maze/projector";
 import { OverlayRenderer } from "./ui/overlay";
-import { AppStatus, MazeData, MazeSolution, Point } from "./types";
+import { AppStatus, MazeData, MazeSolution, Point, VideoFrame } from "./types";
 
 document.addEventListener("DOMContentLoaded", () => {
   const startBtn = document.getElementById("start-btn") as HTMLButtonElement;
@@ -19,10 +20,13 @@ document.addEventListener("DOMContentLoaded", () => {
   let appStatus: AppStatus = AppStatus.IDLE;
   let currentMaze: MazeData | null = null;
   let currentSolution: MazeSolution | null = null;
+  let lastFrame: VideoFrame | null = null;
+  let isProjecting: boolean = false;
 
   const mazeDetector = new MazeDetector();
   const mazeSolver = new MazeSolver();
   const overlayRenderer = new OverlayRenderer();
+  const mazeProjector = new MazeProjector();
 
   const updateStatus = (status: AppStatus, message?: string): void => {
     appStatus = status;
@@ -58,7 +62,9 @@ document.addEventListener("DOMContentLoaded", () => {
         solveBtn.disabled = true;
         break;
       case AppStatus.SOLUTION_READY:
-        statusText.textContent = "Solution found!";
+        statusText.textContent =
+          "Solution found! Move camera to see AR projection";
+        solveBtn.textContent = isProjecting ? "Reset" : "Project Solution";
         solveBtn.disabled = false;
         break;
       case AppStatus.ERROR:
@@ -69,9 +75,49 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  // Start real-time video processing for AR projection
+  const startProjection = (): void => {
+    if (!currentMaze || !currentSolution || !lastFrame) {
+      return;
+    }
+
+    isProjecting = true;
+    updateStatus(AppStatus.SOLUTION_READY);
+
+    // Initialize the projector
+    mazeProjector.initialize(lastFrame, currentMaze, currentSolution);
+    mazeProjector.startProjection();
+
+    // Start real-time frame processing
+    processFramesForAR();
+  };
+
+  // Process frames in real-time for AR projection
+  const processFramesForAR = (): void => {
+    if (!isProjecting) {
+      return;
+    }
+
+    // Capture current frame
+    lastFrame = captureFrame();
+
+    // Update the projection with new frame
+    mazeProjector.update(lastFrame);
+
+    // Continue the loop
+    requestAnimationFrame(processFramesForAR);
+  };
+
+  // Stop the projection
+  const stopProjection = (): void => {
+    isProjecting = false;
+    mazeProjector.stopProjection();
+    solveBtn.textContent = "Project Solution";
+  };
+
   // Handle canvas clicks for point selection
   overlayElement.addEventListener("click", (event) => {
-    if (!currentMaze) return;
+    if (!currentMaze || isProjecting) return;
 
     // Get click coordinates relative to the canvas
     const rect = overlayElement.getBoundingClientRect();
@@ -132,8 +178,24 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Set up solve button
+  // Set up solve/project button
   solveBtn.addEventListener("click", () => {
+    if (appStatus === AppStatus.SOLUTION_READY) {
+      if (isProjecting) {
+        // Reset
+        stopProjection();
+        overlayRenderer.clear();
+        currentMaze = null;
+        currentSolution = null;
+        updateStatus(AppStatus.CAMERA_READY);
+      } else {
+        // Start projection
+        startProjection();
+      }
+      return;
+    }
+
+    // If not in solution ready state, detect maze
     updateStatus(AppStatus.DETECTING);
 
     // Clear previous maze
@@ -142,18 +204,20 @@ document.addEventListener("DOMContentLoaded", () => {
     currentSolution = null;
 
     // Capture frame from camera
-    const frame = captureFrame();
+    lastFrame = captureFrame();
 
     // Process the frame to detect maze
     setTimeout(() => {
       try {
-        currentMaze = mazeDetector.detectMaze(frame);
+        if (lastFrame) {
+          currentMaze = mazeDetector.detectMaze(lastFrame);
 
-        // Draw the maze
-        overlayRenderer.drawMaze(currentMaze);
+          // Draw the maze
+          overlayRenderer.drawMaze(currentMaze);
 
-        // Let user select start point
-        updateStatus(AppStatus.SELECTING_START);
+          // Let user select start point
+          updateStatus(AppStatus.SELECTING_START);
+        }
       } catch (error) {
         console.error("Error processing maze:", error);
         updateStatus(

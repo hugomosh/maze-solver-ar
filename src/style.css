@@ -14,7 +14,7 @@
 }
 
 body {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   background-color: var(--background-color);
   color: var(--text-color);
   min-height: 100vh;
@@ -41,7 +41,8 @@ body {
   box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
 }
 
-video, canvas {
+video,
+canvas {
   width: 100%;
   height: auto;
   display: block;
@@ -59,7 +60,11 @@ canvas {
 }
 
 .primary-btn {
-  background: linear-gradient(45deg, var(--secondary-color), var(--primary-color));
+  background: linear-gradient(
+    45deg,
+    var(--secondary-color),
+    var(--primary-color)
+  );
   border: none;
   color: var(--text-color);
   padding: 12px 24px;
@@ -85,4 +90,48 @@ canvas {
   font-size: 1.2rem;
   text-align: center;
   height: 28px;
+}
+
+/* Add to src/style.css */
+
+.ar-indicators {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ar-indicator {
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--primary-color);
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  border: 1px solid var(--primary-color);
+  box-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
+}
+
+.ar-indicator.active {
+  opacity: 1;
+}
+
+/* Pulse animation for tracking indicator */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 242, 255, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 242, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 242, 255, 0);
+  }
+}
+
+.ar-indicator.pulse {
+  animation: pulse 2s infinite;
 }
